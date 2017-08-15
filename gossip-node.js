@@ -1,7 +1,9 @@
 const uuid = require('uuid/v4');
 
-function GossipNode() {
+function GossipNode(input, done) {
+    this.nodeId = input.nodeId;
     var self = this;
+
     this.generateUuid = function () {
         return uuid();
     };
