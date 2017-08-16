@@ -15,20 +15,25 @@ var gen = rn.generator({
     , integer: true
 });
 
+var session;
+
 /* GET home page. */
 router.get('/', function (req, res, next) {
     res.render('index', {title: 'Express'});
 });
 
 router.get('/new/nodeId', function (req, res) {
+    session = req.session;
     res.json(gen);
 });
 
 router.post('/messages/:nodeId/rumor', function (req, res) {
+    session = req.session;
     var nodeId = req.params.nodeId;
 });
 
 router.post('/messages/:nodeId/want', function (req, res) {
+    session = req.session;
     var nodeId = req.params.nodeId;
 });
 
@@ -48,6 +53,7 @@ var spawnNode = function (nodeId) {
 };
 
 router.post('/nodes/:nodeId', function (req, res) {
+    session = req.session;
     var nodeId = req.params.nodeId;
     console.log("Creating node with Id" + nodeId);
     spawnNode(nodeId);
@@ -55,6 +61,7 @@ router.post('/nodes/:nodeId', function (req, res) {
 });
 
 router.delete('/nodes/:nodeId', function (req, res) {
+    session = req.session;
     var nodeId = req.params.nodeId;
     if (global.processes && global.processes[nodeId]) {
         var thread = global.processes[nodeId];
@@ -71,6 +78,7 @@ router.delete('/nodes/:nodeId', function (req, res) {
  * Get peers for the given node
  */
 router.get('/peers/:nodeId', function (req, res) {
+    session = req.session;
     var nodeId = req.params.nodeId;
     Relationship.find({nodeId: nodeId}, function (err, result) {
         var peers = [];
