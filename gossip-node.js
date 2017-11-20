@@ -3,10 +3,10 @@ var request = require('request');
 
 function GossipNode(input, done) {
     var self = this;
-    this.nodeId = input.nodeId;
-    this.url = input.url;
-    this.nodeUrl = input.url + "/node/" + self.nodeId;
-    this.state = {};
+    self.nodeId = input.nodeId;
+    self.url = input.url;
+    self.nodeUrl = input.url + "/node/" + self.nodeId;
+    self.state = {};
 
     this.generateUuid = function () {
         return uuid();
@@ -77,8 +77,8 @@ function GossipNode(input, done) {
         return Math.floor(Math.random() * (length - 1));
     }
 
-    function getPeer(state, callback) {
-        request.get(self.url + "peers/" + self.nodeId, function(err, res, body) {
+    function getPeer(callback) {
+        request.get(self.url + "peers/" + self.nodeId, function (err, res, body) {
             if (!err && body) {
                 var peers = JSON.parse(body);
                 var length = Object.keys(peers).length;
@@ -95,17 +95,43 @@ function GossipNode(input, done) {
         });
     }
 
-    function chooseToSendRumor(){
+    function chooseToSendRumor() {
         return (Math.random() > 0.5);
     }
 
-    function prepareMessage(state, peer) {
-        if (chooseToSendRumor()) {
-            self.generateRumorMessage(null, null, null, null);
-        }
-        else {
-            self.generateWantMessage(null, null);
-        }
+    function getRumors(nodeId, peer, callback) {
+        request.get(self.url + "messages/rumor/" + nodeId, function (err, res, body) {
+            if (!err && body) {
+                callback(JSON.parse(body));
+            }
+            else {
+                callback(null);
+            }
+        });
+    }
+
+    function prepareMessage(peer, callback) {
+        getRumors(self.nodeId, peer, function (rumors) {
+            if (rumors !== null) {
+                var length = Object.keys(rumors).length;
+                var rumor = rumors[getRandomArrayIndex(length)];
+                if (chooseToSendRumor()) {
+                    var messageId = rumor.messageId + ":" + rumor.seqNo;
+                    callback(self.generateRumorMessage(messageId, self.nodeId, rumor.text, self.nodeUrl));
+                }
+                else {
+                    var originIds = [];
+                    for (var i = 0; i < length; ++i) {
+                        originIds.uuid = rumors[i].messageId;
+                        originIds.seqNo = rumors[i].seqNo;
+                    }
+                    callback(self.generateWantMessage(originIds, self.nodeUrl));
+                }
+            }
+            else {
+                callback(null);
+            }
+        });
     }
 
     function sendMessage(url, message) {
@@ -126,11 +152,15 @@ function GossipNode(input, done) {
 
     while (true) {
         setTimeout(function () {
-            getPeer(self.state, function (peer) {
+            getPeer(function (peer) {
                 if (peer !== null) {
-                    var message = prepareMessage(self.state, peer);
-                    var url = peer.nodeUrl;
-                    sendMessage(url, message);
+                    prepareMessage(peer, function (message) {
+                        if (message !== null) {
+                            console.log("Message" + message);
+                            var url = peer.nodeUrl;
+                            sendMessage(url, message);
+                        }
+                    });
                 }
             });
         }, 200);

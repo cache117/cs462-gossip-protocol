@@ -4,7 +4,6 @@ const rn = require('random-number');
 const spawn = require('threads').spawn;
 
 var GossipNode = require('../gossip-node');
-var Message = require('../model/message');
 var Relationship = require('../model/relationship');
 var Rumor = require('../model/rumor');
 
@@ -26,6 +25,43 @@ router.get('/new/nodeId', function (req, res) {
     var id = gen;
     console.log(id);
     res.json(id);
+});
+
+router.get('/test/setup', function (req, res) {
+    var rumor = new Rumor({
+        nodeId: '56489',
+        messageId: '25zarc90-c123-12e4-8c91-7g52b91776f9',
+        seqNo: 1,
+        originator: 'george',
+        text: 'Hello Zarc!'
+    });
+    rumor.save();
+    rumor = new Rumor({
+        nodeId: '56489',
+        messageId: '10chef90-c123-12e4-8c91-7f41b91911f9',
+        seqNo: 1,
+        originator: 'sam',
+        text: 'Hello Chef!'
+    });
+    rumor.save();
+    rumor = new Rumor({
+        nodeId: '56489',
+        messageId: '37hose90-c123-12e4-8c91-4f41c91776f9',
+        seqNo: 1,
+        originator: 'martin',
+        text: 'Hello Hose!'
+    });
+    rumor.save();
+    rumor = new Rumor({
+        nodeId: '56489',
+        messageId: '36pott90-c123-12e4-8c91-6f6ku02864f9',
+        seqNo: 1,
+        originator: 'fred',
+        text: 'Hello Pott!'
+    });
+    rumor.save();
+
+    var peer
 });
 
 /**
@@ -78,7 +114,7 @@ function getRumorsBetweenRelationship(first, second) {
     }).exec();
 }
 
-router.get('/messages/:nodeId/rumor', function (req, res) {
+router.get('/messages/rumor/:nodeId', function (req, res) {
     session = req.session;
     var nodeId = req.params.nodeId;
     console.log(nodeId);
@@ -96,11 +132,16 @@ router.get('/messages/:nodeId/rumor', function (req, res) {
     }
     databasePromise
         .then(function (err, rumors) {
-            res.json(rumors).end();
+            if (!err) {
+                res.json(rumors).end();
+            }
+            else {
+                res.error("Failed to get rumor").end();
+            }
         });
 });
 
-router.post('/messages/:nodeId/rumor', function (req, res) {
+router.post('/messages/rumor/:nodeId', function (req, res) {
     session = req.session;
     var nodeId = req.params.nodeId;
     if (global.processes && global.processes[nodeId]) {
@@ -108,13 +149,13 @@ router.post('/messages/:nodeId/rumor', function (req, res) {
     }
 });
 
-router.get('/messages/:nodeId/want', function (req, res) {
+router.get('/messages/want/:nodeId', function (req, res) {
     session = req.session;
     var nodeId = req.params.nodeId;
 
 });
 
-router.post('/messages/:nodeId/want', function (req, res) {
+router.post('/messages/want/:nodeId', function (req, res) {
     session = req.session;
     var nodeId = req.params.nodeId;
     console.log(nodeId);
@@ -164,6 +205,19 @@ router.delete('/nodes/:nodeId', function (req, res) {
     }
     else {
         res.status(404).send(nodeId + " not found. Couldn't stop.");
+    }
+    res.end();
+});
+
+router.post('nodes/:nodeId/message', function (req, res) {
+    session = req.session;
+    var nodeId = req.params.nodeId;
+    console.log("Sending message to node: " + nodeId);
+    if (global.processes && global.processes[nodeId]) {
+        var thread = global.processes[nodeId];
+
+    } else {
+        res.status(404).send(nodeId + " not found. Couldn't send message.");
     }
     res.end();
 });
